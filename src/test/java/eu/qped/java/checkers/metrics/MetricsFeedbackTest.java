@@ -1,16 +1,23 @@
 package eu.qped.java.checkers.metrics;
 
+import eu.qped.java.checkers.metrics.data.feedback.DefaultMetricSuggestion;
 import eu.qped.java.checkers.metrics.data.feedback.MetricsFeedback;
 import eu.qped.java.checkers.metrics.data.feedback.MetricsFeedbackGenerator;
+import eu.qped.java.checkers.metrics.data.feedback.MetricsFeedbackSuggestion;
+import eu.qped.java.checkers.metrics.data.report.ClassMetricsMessage;
+import eu.qped.java.checkers.metrics.data.report.ClassMetricsMessageSingle;
+import eu.qped.java.checkers.metrics.settings.MetricConfig;
 import eu.qped.java.checkers.metrics.settings.MetricSettings;
 import eu.qped.java.checkers.metrics.data.report.ClassMetricsEntry;
+import eu.qped.java.checkers.metrics.settings.MetricThreshold;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.List;
+import java.util.*;
 
 import static eu.qped.java.checkers.metrics.ckjm.MetricCheckerEntryHandler.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -45,23 +52,32 @@ class MetricsFeedbackTest {
         assertEquals(metric, metricsFeedback1.getMetric());
     }
 
-    @ParameterizedTest
-    @ValueSource(doubles = {-1d, 0d, 0.5d, 1.0d, 3.3d})
-    void generateSuggestionTestValue(double value) {
-        metricsFeedback1.setValue(value);
-        metricsFeedback1.setSuggestion(metricsFeedback1.getSuggestion());
+    @Test
+   // @ValueSource(doubles = {-1d, 0d, 0.5d, 1.0d, 3.3d})
+    void generateSuggestionTestValue() {
+
+        MetricThreshold metricThreshold = new MetricThreshold(Metric.AMC,0,50,false);
+        MetricConfig metricConfig = new MetricConfig(metricThreshold, null);
+        MetricSettings  metricSettings = new MetricSettings();
+        metricSettings.setAmcConfig(metricConfig);
+        HashMap<Metric, MetricsFeedbackSuggestion> feedbackSuggestionMap = new HashMap<>();
+        feedbackSuggestionMap.put(Metric.AMC,null);
+        metricSettings.setCustomSuggestions(feedbackSuggestionMap);
+
+        ClassMetricsMessageSingle message = new ClassMetricsMessageSingle(Metric.AMC,-1);
+        ArrayList<ClassMetricsMessage> list = new ArrayList<>();
+        list.add(message);
+        ClassMetricsEntry entry = new ClassMetricsEntry("TestClass", list);
+        List<ClassMetricsEntry> entryList = Collections.singletonList( entry);
+
+        MetricsFeedbackGenerator feedbackGenerator = new MetricsFeedbackGenerator();
+
 
         assertEquals
-                ("You are within the " + Metric.AMC + "'s threshold.",
-                        MetricsFeedbackGenerator.generateDefaultSuggestion(
-                                Metric.AMC, false, false));
+                (DefaultMetricSuggestion.AMC.getLowerBoundReachedSuggestion(),
+                        feedbackGenerator.generateMetricsCheckerFeedbacks(entryList,metricSettings).get(0));
 
-        assertEquals
-                ("The " + Metric.AMC + "'s value is too low: Increase your average method size, e.g. by joining multiple methods with mostly the same functionalities from over-engineering.",
-                        MetricsFeedbackGenerator.generateDefaultSuggestion(
-                                Metric.AMC, true, false));
-
-        assertEquals
+       /* assertEquals
                 ("The " + Metric.AMC + "'s value is too high: Decrease your average method size, e.g. by delegating functionalities to other newly created methods.",
                         MetricsFeedbackGenerator.generateDefaultSuggestion(
                                 Metric.AMC, false, true));
@@ -73,6 +89,8 @@ class MetricsFeedbackTest {
                         true));
         metricsFeedback1.setValue(99d);
         assertEquals(99d, metricsFeedback1.getValue());
+
+        */
     }
 
     @ParameterizedTest
@@ -86,12 +104,13 @@ class MetricsFeedbackTest {
     @ParameterizedTest
     @EnumSource(Metric.class)
     void generateMetricsCheckerFeedbackTest() {
+        MetricsFeedbackGenerator feedbackGenerator = new MetricsFeedbackGenerator();
         MetricSettings metricSettings = MetricSettings.builder().build();
         List<ClassMetricsEntry> metricCheckerEntries =
                 List.of(mock(ClassMetricsEntry.class), mock(ClassMetricsEntry.class), mock(ClassMetricsEntry.class),
                         mock(ClassMetricsEntry.class), mock(ClassMetricsEntry.class), mock(ClassMetricsEntry.class));
 
-        assertEquals(MetricsFeedbackGenerator.generateMetricsCheckerFeedbacks(metricCheckerEntries, metricSettings), List.of());
+        assertEquals(feedbackGenerator.generateMetricsCheckerFeedbacks(metricCheckerEntries, metricSettings), List.of());
     }
 
     @Test

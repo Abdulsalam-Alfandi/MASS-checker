@@ -4,10 +4,7 @@ import eu.qped.framework.qf.QfObjectBase;
 import eu.qped.java.checkers.metrics.MetricsChecker;
 import eu.qped.java.checkers.metrics.ckjm.MetricCheckerEntryHandler.Metric;
 import eu.qped.java.checkers.metrics.data.feedback.MetricsFeedbackSuggestion;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.HashMap;
 
@@ -19,7 +16,9 @@ import java.util.HashMap;
  */
 @Getter
 @Setter
+@AllArgsConstructor
 @Builder
+
 public class MetricSettings extends QfObjectBase {
 
     @Getter(AccessLevel.NONE)
@@ -128,6 +127,9 @@ public class MetricSettings extends QfObjectBase {
      */
     private MetricConfig wmcConfig;
 
+    public MetricSettings(){
+    }
+
 
     public boolean areCallsToToJdkIncluded() {
         return includeCallsToJdk;
@@ -143,5 +145,9 @@ public class MetricSettings extends QfObjectBase {
 
     public void includeOnlyPublicClasses(boolean includeNonPublicClasses) {
         this.includeOnlyPublicClasses = includeNonPublicClasses;
+    }
+
+    public MetricConfig getCamConfig() {
+        return camConfig;
     }
 }

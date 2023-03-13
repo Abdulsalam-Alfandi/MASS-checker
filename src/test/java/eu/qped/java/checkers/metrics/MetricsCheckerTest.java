@@ -93,6 +93,7 @@ class MetricsCheckerTest {
 
     @Test
     void testCheck() throws IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+        MetricsFeedbackGenerator feedbackGenerator = new MetricsFeedbackGenerator();
         MetricsChecker metricsCheckerCustom = MetricsChecker.builder().qfMetricsSettings(MetricsCheckerTestUtility.generateSampleQFMetricsSettings()).build();
 
         MetricsCheckerReport metricsCheckerReport = MetricsCheckerReport.builder().build();
@@ -108,7 +109,7 @@ class MetricsCheckerTest {
         runCkjmExtendedMethod.invoke(metricsCheckerCustom, metricsCheckerReport, pathsToClassFiles, false, true);
         runCkjmExtendedMethod.setAccessible(false);
         metricsCheckerReport.setPathsToClassFiles(List.of(pathsToClassFiles));
-        List<MetricsFeedback> metricsFeedbacks = MetricsFeedbackGenerator.generateMetricsCheckerFeedbacks(metricsCheckerReport.getMetricsMap(), metricSettings);
+        List<MetricsFeedback> metricsFeedbacks = feedbackGenerator.generateMetricsCheckerFeedbacks(metricsCheckerReport.getMetricsMap(), metricSettings);
         metricsCheckerCustom.setMetricsFeedbacks(metricsFeedbacks);
 
         assertArrayEquals(metricsCheckerReport.getPathsToClassFiles().toArray(), metricsCheckerCustom.check().getPathsToClassFiles().toArray());

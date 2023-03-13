@@ -30,6 +30,8 @@ public class MetricsChecker {
     @Setter(AccessLevel.PUBLIC)
     private List<MetricsFeedback> metricsFeedbacks;
 
+    private static MetricsFeedbackGenerator feedbackGenerator= new MetricsFeedbackGenerator();
+
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private QfMetricsSettings qfMetricsSettings;
@@ -54,7 +56,7 @@ public class MetricsChecker {
 
         runCkjmExtended(metricsCheckerReport, pathsToClassFiles, metricSettings.areCallsToToJdkIncluded(), metricSettings.areOnlyPublicClassesIncluded());
         metricsCheckerReport.setPathsToClassFiles(List.of(pathsToClassFiles));
-        this.metricsFeedbacks = MetricsFeedbackGenerator.generateMetricsCheckerFeedbacks(metricsCheckerReport.getMetricsMap(), metricSettings);
+        this.metricsFeedbacks = feedbackGenerator.generateMetricsCheckerFeedbacks(metricsCheckerReport.getMetricsMap(), metricSettings);
 
         return metricsCheckerReport;
     }
