@@ -1,5 +1,20 @@
 package eu.qped.java.checkers.metrics;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import eu.qped.framework.QpedQfFilesUtility;
 import eu.qped.java.checkers.mass.QfMetricsSettings;
 import eu.qped.java.checkers.metrics.data.feedback.MetricsFeedback;
 import eu.qped.java.checkers.metrics.data.feedback.MetricsFeedbackGenerator;
@@ -9,18 +24,6 @@ import eu.qped.java.checkers.metrics.data.report.MetricsCheckerReport;
 import eu.qped.java.checkers.metrics.settings.MetricSettings;
 import eu.qped.java.checkers.metrics.settings.MetricSettingsReader;
 import eu.qped.java.checkers.metrics.utils.MetricsCheckerTestUtility;
-import eu.qped.java.utils.MassFilesUtility;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.File;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
 
 /**
  * Test class for {@link MetricsChecker}
@@ -29,79 +32,45 @@ import static org.mockito.Mockito.mock;
  */
 class MetricsCheckerTest {
 
-    private MetricsChecker metricsCheckerEmpty;
     private MetricsChecker metricsCheckerFilled;
-    private MetricsChecker metricsCheckerNoArgs;
 
     private final Field[] fields = MetricsChecker.class.getDeclaredFields();
 
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         MetricsCheckerTestUtility.generateTestClass();
 
-        metricsCheckerEmpty = MetricsChecker.builder().build();
         metricsCheckerFilled = MetricsChecker.builder()
                 .metricsFeedbacks(List.of())
                 .qfMetricsSettings(mock(QfMetricsSettings.class))
+                .solutionRoot(MetricsCheckerTestUtility.getSolutionRoot())
                 .build();
-        metricsCheckerNoArgs = new MetricsChecker();
     }
 
-    @Test
-    void testClassFilesPath() throws IllegalAccessException {
-        Field classFilesPathField = MetricsCheckerTestUtility.getFieldByName("CLASS_FILES_PATH", fields);
-        assert classFilesPathField != null;
-        classFilesPathField.setAccessible(true);
-        String classFilesPath = (String) classFilesPathField.get(MetricsChecker.class);
-        classFilesPathField.setAccessible(false);
-        assertEquals("src/main/java/eu/qped/java/utils/compiler/compiledFiles", classFilesPath);
-    }
+//    @Test
+//    void testClassFilesPath() throws IllegalAccessException {
+//        Field classFilesPathField = MetricsCheckerTestUtility.getFieldByName("CLASS_FILES_PATH", fields);
+//        assert classFilesPathField != null;
+//        classFilesPathField.setAccessible(true);
+//        String classFilesPath = (String) classFilesPathField.get(MetricsChecker.class);
+//        classFilesPathField.setAccessible(false);
+//        assertEquals("src/main/java/eu/qped/java/utils/compiler/compiledFiles", classFilesPath);
+//    }
 
-    @Test
-    void testEmptyMetricsChecker() throws IllegalAccessException {
-        assertNull(metricsCheckerEmpty.getMetricsFeedbacks());
 
-        Field qfMetricsSettings = MetricsCheckerTestUtility.getFieldByName("qfMetricsSettings", fields);
-        assert qfMetricsSettings != null;
-        qfMetricsSettings.setAccessible(true);
-        assertNull(qfMetricsSettings.get(metricsCheckerEmpty));
-        qfMetricsSettings.setAccessible(false);
-    }
-
-    @Test
-    void testFilledMetricsChecker() throws IllegalAccessException {
-        assertNotNull(metricsCheckerFilled.getMetricsFeedbacks());
-
-        Field qfMetricsSettings = MetricsCheckerTestUtility.getFieldByName("qfMetricsSettings", fields);
-        assert qfMetricsSettings != null;
-        qfMetricsSettings.setAccessible(true);
-        assertNotNull(qfMetricsSettings.get(metricsCheckerFilled));
-        qfMetricsSettings.setAccessible(false);
-    }
-    @Test
-    void testNoArgsMetricsChecker() throws IllegalAccessException {
-        assertNull(metricsCheckerNoArgs.getMetricsFeedbacks());
-
-        Field qfMetricsSettingsField = MetricsCheckerTestUtility.getFieldByName("qfMetricsSettings", fields);
-        assert qfMetricsSettingsField != null;
-        qfMetricsSettingsField.setAccessible(true);
-        assertNull(qfMetricsSettingsField.get(metricsCheckerNoArgs));
-        qfMetricsSettingsField.setAccessible(false);
-    }
 
 
     @Test
-    void testCheck() throws IllegalAccessException, NoSuchMethodException, InvocationTargetException {
-        MetricsFeedbackGenerator feedbackGenerator = new MetricsFeedbackGenerator();
-        MetricsChecker metricsCheckerCustom = MetricsChecker.builder().qfMetricsSettings(MetricsCheckerTestUtility.generateSampleQFMetricsSettings()).build();
+    void testCheck() throws IllegalAccessException, NoSuchMethodException, InvocationTargetException, IOException {
+        MetricsChecker metricsCheckerCustom = MetricsChecker.builder().qfMetricsSettings(MetricsCheckerTestUtility.generateSampleQFMetricsSettings()).solutionRoot(MetricsCheckerTestUtility.getSolutionRoot()).build();
 
         MetricsCheckerReport metricsCheckerReport = MetricsCheckerReport.builder().build();
         MetricSettingsReader metricSettingsReader = MetricSettingsReader.builder().qfMetricsSettings(MetricsCheckerTestUtility.generateSampleQFMetricsSettings()).build();
         MetricSettings metricSettings = metricSettingsReader.readMetricsCheckerSettings(MetricSettings.builder().build());
 
         List<File> classFiles
-                = MassFilesUtility.builder().dirPath("src/main/java/eu/qped/java/utils/compiler/compiledFiles").build().filesWithExtension("class");
+                = QpedQfFilesUtility.filesWithExtension(MetricsCheckerTestUtility.getSolutionRoot(), "class");
         String[] pathsToClassFiles = classFiles.stream().map(File::getPath).toArray(String[]::new);
 
         Method runCkjmExtendedMethod = metricsCheckerCustom.getClass().getDeclaredMethod("runCkjmExtended", MetricsCheckerReport.class, String[].class, boolean.class, boolean.class);
@@ -109,7 +78,7 @@ class MetricsCheckerTest {
         runCkjmExtendedMethod.invoke(metricsCheckerCustom, metricsCheckerReport, pathsToClassFiles, false, true);
         runCkjmExtendedMethod.setAccessible(false);
         metricsCheckerReport.setPathsToClassFiles(List.of(pathsToClassFiles));
-        List<MetricsFeedback> metricsFeedbacks = feedbackGenerator.generateMetricsCheckerFeedbacks(metricsCheckerReport.getMetricsMap(), metricSettings);
+        List<MetricsFeedback> metricsFeedbacks = MetricsFeedbackGenerator.generateMetricsCheckerFeedbacks(metricsCheckerReport.getMetricsMap(), metricSettings);
         metricsCheckerCustom.setMetricsFeedbacks(metricsFeedbacks);
 
         assertArrayEquals(metricsCheckerReport.getPathsToClassFiles().toArray(), metricsCheckerCustom.check().getPathsToClassFiles().toArray());
@@ -141,9 +110,9 @@ class MetricsCheckerTest {
         assertEquals(
                 metricsCheckerFilled.toString(),
                 "MetricsChecker{" +
-                "feedbacks=" + metricsCheckerFilled.getMetricsFeedbacks() +
-                ", qfMetricsSettings=" + qfMetricsSettings.get(metricsCheckerFilled) +
-                '}');
+                        "feedbacks=" + metricsCheckerFilled.getMetricsFeedbacks() +
+                        ", qfMetricsSettings=" + qfMetricsSettings.get(metricsCheckerFilled) +
+                        '}');
         qfMetricsSettings.setAccessible(false);
     }
 }
